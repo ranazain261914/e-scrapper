@@ -19,18 +19,25 @@ def export_summary(products, filepath, duplicates_removed):
     
     summary = {}
     for p in products:
-        subcat = p['subcategory']
-        if subcat not in summary:
-            summary[subcat] = {'total': 0, 'prices': [], 'missing_desc': 0}
+        # Assuming your product dictionaries have a 'category' key
+        cat = p.get('category', 'Unknown Category') 
+        subcat = p.get('subcategory', 'Unknown Subcategory')
         
-        summary[subcat]['total'] += 1
-        summary[subcat]['prices'].append(p['price'])
-        if not p['description']:
-            summary[subcat]['missing_desc'] += 1
+        # Use a tuple of (category, subcategory) as the dictionary key
+        group_key = (cat, subcat)
+        
+        if group_key not in summary:
+            summary[group_key] = {'total': 0, 'prices': [], 'missing_desc': 0}
+        
+        summary[group_key]['total'] += 1
+        summary[group_key]['prices'].append(p['price'])
+        if not p.get('description'):
+            summary[group_key]['missing_desc'] += 1
 
     with open(filepath, 'w', newline='', encoding='utf-8') as f:
         writer = csv.writer(f)
         writer.writerow([
+            'Category',              # Added Category header
             'Subcategory',
             'Total Products',
             'Avg Price',
@@ -40,13 +47,15 @@ def export_summary(products, filepath, duplicates_removed):
             'Duplicates Removed (Global)'
         ])
         
-        for subcat, data in summary.items():
+        # Unpack the tuple key into cat and subcat
+        for (cat, subcat), data in summary.items():
             prices = data['prices']
             avg_p = sum(prices) / len(prices) if prices else 0.0
             min_p = min(prices) if prices else 0.0
             max_p = max(prices) if prices else 0.0
             
             writer.writerow([
+                cat,                 # Write the category first
                 subcat,
                 data['total'],
                 round(avg_p, 2),
